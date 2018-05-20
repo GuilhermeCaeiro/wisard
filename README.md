@@ -4,7 +4,7 @@ The WiSARD model, originally created by I. Alexander [1], is a Weightless Neural
 The code present in this repository is just a **TEST** implementation of the WiSARD classifier in Python and might be useful only for educational purposes (the code is very "crude"). For those wanting a mature implementation, it is suggested the [PyWANN](https://github.com/firmino/PyWANN) library (developed for Python 2).
 
 ## Additional Information
-This software was developed using Python 3.5 and should be compatible with Python 3 subversions. 
+This software was developed using Python 3.5 and should be compatible with other Python 3 subversions. 
 
 ## References
 [1] I. Aleksander,  W. Thomas, and P. Bowden, "WISARD: a radical new step forward in image recognition", Sensor Review, 4(3), pp. 120-124, 1984.
