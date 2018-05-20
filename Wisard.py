@@ -100,7 +100,7 @@ class Wisard:
         number_of_classes = len(input_classes)
         class_identifiers = list(input_classes.keys())
         class_identifiers.sort() # sorts the classes
-        class_identifiers = class_identifiers[::-1] # reverses the classes' list
+        #class_identifiers = class_identifiers[::-1] # reverses the classes' list
         
         print("Number of classes being trained: " + str(number_of_classes))
         print(input_classes.keys())
@@ -177,10 +177,10 @@ class Wisard:
             #    print("Prediction failed (score equals 0). Picking the first discriminator's.")
                 
 
-        # If the method ends with more than one class as possible, it just returns the first one
-        # TODO Change the following line to return a random classe if there is still a draw between
+        # If the method ends with more than one class as possible, it just returns the first one.
+        # TODO: Change the following line to return a random classe if there is still a draw between
         # two or more classes.
-        return {"class": predicted_classes[0]["discriminator"].input_class, "score": predicted_classes[0]["score"]}
+        return {"class": predicted_classes[0]["discriminator"].input_class, "score": predicted_classes[0]["score"]}, True if len(predicted_classes) > 1 else False
 
     def deactivate_bleaching(self):
         self.bleaching = False
