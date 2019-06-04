@@ -30,7 +30,7 @@ wann.train(training_patterns, expected_outputs)
 for discriminator in wann.discriminators:
     print(discriminator.input_class)
     print(discriminator.input_length)
-    print(discriminator.tupple_size)
+    print(discriminator.tuple_size)
     print(discriminator.memory)
 
 
@@ -86,7 +86,7 @@ wann.train(training_patterns, expected_outputs)
 for discriminator in wann.discriminators:
     print(discriminator.input_class)
     print(discriminator.input_length)
-    print(discriminator.tupple_size)
+    print(discriminator.tuple_size)
     print(discriminator.memory)
 
 
@@ -104,7 +104,7 @@ wann.train(training_patterns, expected_outputs)
 for discriminator in wann.discriminators:
     print(discriminator.input_class)
     print(discriminator.input_length)
-    print(discriminator.tupple_size)
+    print(discriminator.tuple_size)
     print(discriminator.memory)
 
 

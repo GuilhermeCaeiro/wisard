@@ -1,26 +1,49 @@
+"""
+Module that implements the WiSARD classifier.
+"""
+
 import random
 import math
 import numpy as np
 import copy
 
 class Discriminator:
-    def __init__(self, input_class, input_length, tupple_size, bleaching = False):
+    """
+    Represents a WiSARD discriminator, which encapsulates a set of random access memories.      
+    """
+
+
+    def __init__(self, input_class, input_length, tuple_size, bleaching = False):
+        """
+        Constructor for the Discriminator class.
+
+        :param input_class: string that identifies the class being represented by the discriminator.
+        :param input_length: number (integer) of bits in a WiSARD input.
+        :param tuple_size: number (integer) that defines the address size to be used by the memories.
+        :param bleaching: boolean indicating if the bleaching functionality is active or not.
+        """
         self.input_class = input_class
         self.input_length = input_length
-        self.tupple_size = tupple_size
-        self.ram_size = math.pow(self.tupple_size, 2)
-        self.number_of_rams = int(self.input_length / self.tupple_size)
+        self.tuple_size = tuple_size
+        self.ram_size = math.pow(2, self.tuple_size) # Unused
+        self.number_of_rams = int(self.input_length / self.tuple_size)
         self.bleaching = bleaching
         #self.memory = np.zeros(self.number_of_rams, self.ram_size)
-        self.memory = {}
-        
+        self.memory = {} # This can be a list
+    
     def write(self, pattern):
+        """
+        Writes a pattern to the RAMs.
+
+        :param pattern: binary pattern to be learned.
+        """
+
         for i in range(self.number_of_rams):
             if i not in self.memory:
                 self.memory[i] = {}
             address = []
 
-            for j in range(i * self.tupple_size, (i * self.tupple_size) + self.tupple_size):
+            for j in range(i * self.tuple_size, (i * self.tuple_size) + self.tuple_size):
                  address.append(pattern[j])
 
             address = "".join(str(i) for i in address) # address becomes a string
@@ -31,13 +54,23 @@ class Discriminator:
                 self.memory[i][address] = self.memory[i][address] + 1
             
     def evaluate(self, pattern, bleaching_threshold = 0):
+        """
+        Evaluates a pattern and returns its score.
+
+        :param pattern: pattern to be evaluated.
+        :param bleaching_threshold: threshold to be used to solve draws.
+
+        Returns:
+            -> discriminator score.
+        """
+
         score = 0
         evaluation_pattern = ""
 
         for i in range(self.number_of_rams):
             address = []
 
-            for j in range(i * self.tupple_size, (i * self.tupple_size) + self.tupple_size):
+            for j in range(i * self.tuple_size, (i * self.tuple_size) + self.tuple_size):
                  address.append(pattern[j])
 
             address = "".join(str(i) for i in address) # address becomes a string
@@ -58,20 +91,43 @@ class Discriminator:
         return score, evaluation_pattern, address
 
 class Wisard:
+    """
+    WiSARD "neural network". A weightless, RAM-based classifier.
+    """
 
-    def __init__(self, tupple_size = 2, seed = 0, bleaching = False):
+    def __init__(self, tuple_size = 2, bleaching = False, seed = 0):
+        """
+        Constructor for the WiSARD class.
+
+        :param tuple_size: number (integer) that defines the address size to be used by the memories.
+        :param bleaching: boolean indicating if the bleaching functionality is active or not.
+        :param seed: integer to be used as seed in the random number generator, to allow reproducibility.
+        """
+
         #self.input_list = []
         #self.expected_output_list = []
         self.seed = seed
         self.bleaching = bleaching
-        self.tupple_size = tupple_size
+        self.tuple_size = tuple_size
         self.discriminators = []
 
-    def processInput(self, mode, input_list, expected_output_list = []):
+    def process_input(self, mode, input_list, expected_output_list = []):
+        """
+        Prepares the input by appling to it the random mapping of the bits in the input sequence, based on the seed provided during the class creation. 
+
+        :param mode: string identifying its mode of operation as "training" or "prediction".
+        :param input_list: list of binary input sequences (lists with zeros and ones as integers).
+        :param expected_output_list: list of expected outputs.
+
+        Returns: 
+            -> For "training" mode: a dictionary containing the input classes and their respective transformed training observations.
+            -> For "prediction" mode: the transformed observation.
+        """
+
         # separates classes
         input_classes = {}
 
-        if mode == "trainning":
+        if mode == "training":
             for i in range(len(input_list)):
                 if expected_output_list[i] not in input_classes:
                     input_classes[expected_output_list[i]] = []
@@ -93,10 +149,17 @@ class Wisard:
             
             return input_item
         else:
-            return None #raising an error is better
+            raise ValueError("Invalid mode identifier.")
 
     def train(self, input_list, expected_output_list):
-        input_classes = self.processInput("trainning", input_list, expected_output_list)
+        """
+        Trains the WiSARD classifier based on the provide inputs and its expected outputs. 
+
+        :param input_list: list of binary input sequences (lists with zeros and ones as integers).
+        :param expected_output_list: list of expected outputs (preferrably as strings)
+        """
+
+        input_classes = self.process_input("training", input_list, expected_output_list)
         number_of_classes = len(input_classes)
         class_identifiers = list(input_classes.keys())
         class_identifiers.sort() # sorts the classes
@@ -106,12 +169,12 @@ class Wisard:
         print(input_classes.keys())
         print(class_identifiers)
 
-
+        # TODO Change to allow online training.
         for input_class in class_identifiers:
             print("Number of training samples for class " + str(input_class) + ": " + str(len(input_classes[input_class])))
 
             input_data_length = len(input_classes[input_class][0])
-            discriminator = Discriminator(input_class, input_data_length, self.tupple_size, self.bleaching)
+            discriminator = Discriminator(input_class, input_data_length, self.tuple_size, self.bleaching)
 
             for training_sample in input_classes[input_class]:
                 discriminator.write(training_sample)
@@ -119,7 +182,15 @@ class Wisard:
             self.discriminators.append(discriminator)
 
     def predict(self, rawinput):
-        processed_input = self.processInput("prediction", [rawinput])
+        """
+        Evaluates a binary input sequence and returns its class. 
+
+        :param rawinput: binary input sequence (list with zeros and ones as integers).
+
+        Returns: the class that returned the biggest discriminator response.
+        """
+
+        processed_input = self.process_input("prediction", [rawinput])
 
         result_achieved = False
 
@@ -178,19 +249,31 @@ class Wisard:
                 
 
         # If the method ends with more than one class as possible, it just returns the first one.
-        # TODO: Change the following line to return a random classe if there is still a draw between
+        # TODO: Change the following line to return a random class if there is still a draw between
         # two or more classes.
         return {"class": predicted_classes[0]["discriminator"].input_class, "score": predicted_classes[0]["score"]}, True if len(predicted_classes) > 1 else False
 
     def deactivate_bleaching(self):
+        """
+        Dectivates bleaching, if that functionality is active. Does nothing otherwise.
+        """
         self.bleaching = False
 
     def show_mental_map(self):
+        """
+        Not implemented yet.
+        """
         pass
 
     def save_network_to_disk(self):
+        """
+        Not implemented yet.
+        """
         pass
 
     def load_network_from_disk(self):
+        """
+        Not implemented yet.
+        """
         pass
         
