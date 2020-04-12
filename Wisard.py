@@ -4,7 +4,6 @@ Module that implements the WiSARD classifier.
 
 import random
 import math
-import numpy as np
 import copy
 
 class Discriminator:
