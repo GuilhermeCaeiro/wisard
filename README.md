@@ -6,7 +6,7 @@ The code present in this repository is just a **TEST** implementation of the WiS
 ## Additional Information
 This software was developed using Python 3.5 and should be compatible with other Python 3 subversions. Python 2 might be supported after minor modifications.
 
-To run the provided testes, the following libraries are required:
+To run the provided tests, the following libraries are required:
  - numpy
  - matplotlib
 
