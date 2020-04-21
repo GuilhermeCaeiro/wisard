@@ -9,6 +9,7 @@ This software was developed using Python 3 and should be compatible with all Pyt
 To run the provided tests, the following libraries are required:
  - numpy
  - matplotlib
+ - sklearn
 
 ## References
 [1] I. Aleksander,  W. Thomas, P. Bowden, WISARD: a radical new step forward in image recognition, Sensor Review 4(3) (1984) 120-124.
