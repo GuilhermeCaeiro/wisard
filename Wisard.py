@@ -7,6 +7,7 @@ import math
 import copy
 import time
 import pickle
+import multiprocessing
 
 
 class Discriminator:
@@ -55,6 +56,7 @@ class Discriminator:
     def write_dinamyc_alloc(self, addresses):
         """
         Writes a pattern to the RAMs.
+
         :param pattern: binary pattern to be learned.
         """
         
@@ -73,8 +75,10 @@ class Discriminator:
     def evaluate_dinamyc_alloc(self, addresses, bleaching_threshold = 0):
         """
         Evaluates a pattern and returns its score.
+
         :param pattern: pattern to be evaluated.
         :param bleaching_threshold: threshold to be used to solve draws.
+
         Returns:
             -> discriminator score.
         """
@@ -98,10 +102,9 @@ class Discriminator:
     def write_pre_alloc_array(self, addresses):
         """
         Writes a pattern to the RAMs.
+
         :param pattern: binary pattern to be learned.
         """
-
-        #pattern = self.get_observation_as_ints(pattern) 
 
         for i in range(self.number_of_rams): 
             ram_position = addresses[i]
@@ -112,12 +115,14 @@ class Discriminator:
     def evaluate_pre_alloc_array(self, addresses, bleaching_threshold = 0):
         """
         Evaluates a pattern and returns its score.
+
         :param pattern: pattern to be evaluated.
         :param bleaching_threshold: threshold to be used to solve draws.
+
         Returns:
             -> discriminator score.
         """
-        #pattern = self.get_observation_as_ints(pattern)
+        
         score = 0
 
         for i in range(self.number_of_rams):
@@ -141,7 +146,9 @@ class Discriminator:
 
             for i in range(self.tuple_size):
                 for address in self.memory[ram]:
-                    if address[i] == "1" and self.memory[ram][address] > 0:
+                    bin_address = ("{0:0" + str(self.tuple_size) + "b}").format(address) # remove if address is string
+
+                    if bin_address[i] == "1" and self.memory[ram][address] > 0: # change bin_address to address if address is string
                         chunk[i] = chunk[i] + self.memory[ram][address]
                 
             pixels = pixels + chunk
@@ -243,7 +250,7 @@ class Wisard:
             raise Exception("Lengths of \"observations\" and \"classes\" must be equal.")
 
         transformed_observations = self.prepare_observations(observations, "train")
-
+        
         for i in range(len(transformed_observations)):
             observation = transformed_observations[i]
             observation_class = classes[i]
@@ -259,7 +266,7 @@ class Wisard:
             discriminator.write(observation)
 
 
-    def predict(self, observations, detailed = False):
+    def predict_single_proc(self, observations, detailed = False):
         """
         Evaluates an observation and returns its predicted class. 
         :param observation: binary input sequence (list with zeros and ones as integers).
@@ -269,7 +276,7 @@ class Wisard:
         
         predictions = []
         transformed_observations = self.prepare_observations(observations, "predict")
-
+        
         for observation in transformed_observations:                
             result_achieved = False
             predicted_classes = []
@@ -335,6 +342,63 @@ class Wisard:
             
         return predictions
 
+    def predict_multi_proc(self, observations, detailed, process_id, manager_dict):
+        predictions = self.predict_single_proc(observations, detailed)
+        manager_dict[process_id] = predictions
+
+
+    def predict(self, observations, detailed = False, multi_proc = False, num_proc = 1):
+        """
+        Evaluates an observation and returns its predicted class. 
+        :param observation: binary input sequence (list with zeros and ones as integers).
+
+        Returns: the class that returned the biggest discriminator response.
+        """
+
+        predictions = []
+
+        if not multi_proc:
+            predictions = self.predict_single_proc(observations, detailed)
+        else:
+            if num_proc <= 0:
+                raise Exception("\"num_proc\" must be an integer >= 1.")
+
+            num_observations = len(observations)
+            observations_per_chunk = math.ceil(num_observations / num_proc)
+            processes = {}
+            processes_predictions = multiprocessing.Manager().dict()
+
+            for i in range(num_proc):
+                observations_chunk = []
+                start_position = i * observations_per_chunk
+                end_position = start_position + observations_per_chunk
+                
+                if i < (num_proc - 1):
+                    observations_chunk = observations[start_position: end_position]
+                else:
+                    observations_chunk = observations[start_position:]
+
+                process = multiprocessing.Process(
+                    target = self.predict_multi_proc, 
+                    args=(
+                        observations_chunk,
+                        detailed,
+                        i,
+                        processes_predictions
+                    )
+                )
+
+                process.start()
+                processes[i] = process
+
+            for process in processes:
+                processes[process].join()
+
+            for i in range(num_proc):
+                predictions = predictions + processes_predictions[i]  
+            
+        return predictions
+
     
     def prepare_observations(self, observations, caller):
         transformed_observations = []
@@ -356,7 +420,8 @@ class Wisard:
             observation = self.random_mapping(observation)
 
             if self.type_mem_alloc == "dalloc":
-                observation = self.get_observation_as_bin_strings(observation)
+                #observation = self.get_observation_as_bin_strings(observation)
+                observation = self.get_observation_as_ints(observation) # string consumes way, waaay too much memory here.
             elif self.type_mem_alloc == "palloc":
                 observation = self.get_observation_as_ints(observation)
 
@@ -365,6 +430,7 @@ class Wisard:
         return transformed_observations
 
 
+    # eats a lot of memory
     def get_observation_as_bin_strings(self, observation):
         observation_as_bin_strings = []
 
