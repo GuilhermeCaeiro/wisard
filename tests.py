@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     print("In-sample error")
     start_time = time.time()
-    predictions = wann.predict(training_observations, detailed = False, multi_proc = True, num_proc = 2)
+    predictions = wann.predict(training_observations, detailed = False, multi_proc = True, num_proc = 8)
     print(time.time() - start_time)
     #wann.print_time_data()
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     print("Out of sample error")
     start_time = time.time()
-    predictions = wann.predict(test_observations, detailed = False, multi_proc = True, num_proc = 2)
+    predictions = wann.predict(test_observations, detailed = False, multi_proc = True, num_proc = 8)
     print(time.time() - start_time)
     #wann.print_time_data()
 
