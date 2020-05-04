@@ -179,6 +179,7 @@ if __name__ == "__main__":
     print(len(training_observations), len(training_targets))
     print(len(test_observations), len(test_targets))
 
+    print("Training")
     wann = Wisard(2, True, 3546, type_mem_alloc="palloc")
     wann.train(training_observations, training_targets)
 

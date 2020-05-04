@@ -2,9 +2,13 @@ import random
 import math
 import copy
 
-class DataPreprocessor:
+cdef class DataPreprocessor:
 
-    def __init__(self, tuple_size, ram_size, shuffle_observations, seed):
+    cdef public:
+        cdef int seed, tuple_size, observation_length, ram_size, number_of_rams
+        cdef bint shuffle_observations
+
+    def __init__(self, int tuple_size, int ram_size, bint shuffle_observations, int seed):
         self.seed = seed
         self.tuple_size = tuple_size
         self.observation_length = 0
@@ -13,7 +17,7 @@ class DataPreprocessor:
         self.number_of_rams = 0 
 
 
-    def random_mapping(self, observation):
+    def random_mapping(self, list observation):
         """
         Prepares the observation by appling to it the random mapping of the bits in the input sequence, 
         based on the seed provided during the class creation. 
@@ -34,21 +38,23 @@ class DataPreprocessor:
         return observation
 
 
-    def prepare_observations(self, observations, caller, ):
+    def prepare_observations(self, list observations, str caller):
+        cdef list transformed_observations
+        cdef int observation_length
+        
         transformed_observations = []
 
         for observation in observations:
+            observation_length = len(observation)
 
             if caller == "train" and self.observation_length == 0:
-                observation_length = len(observation)
-                
                 if ((observation_length % self.tuple_size) != 0):
                     raise Exception("Observation length MUST be multiple of tuple size.")
 
                 self.observation_length = observation_length
-                self.number_of_rams = int(self.observation_length / self.tuple_size)
+                self.number_of_rams = self.observation_length / self.tuple_size
             
-            if len(observation) != self.observation_length:
+            if observation_length != self.observation_length:
                 raise Exception("Observation length MUST be %s." % (str(self.observation_length)))
 
             observation = self.random_mapping(observation)
@@ -77,7 +83,7 @@ class DataPreprocessor:
         return observation_as_bin_strings
 
 
-    def get_observation_as_ints(self, observation):
+    def get_observation_as_ints(self, list observation):
         observation_as_ints = []
 
         for i in range(self.number_of_rams): 
@@ -91,7 +97,10 @@ class DataPreprocessor:
         return observation_as_ints
 
 
-    def get_address_as_int(self, pattern, start, end):
+    def get_address_as_int(self, list pattern, int start, int end):
+        cdef list address
+        cdef int int_address
+
         address = pattern[start: end]
-        address = int("".join(str(i) for i in address), 2) 
-        return address
+        int_address = int("".join(str(i) for i in address), 2) 
+        return int_address
