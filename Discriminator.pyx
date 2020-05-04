@@ -1,12 +1,28 @@
 import math
+import numpy as np
 
-class Discriminator:
+cdef class Discriminator:
     """
     Represents a WiSARD discriminator, which contains a set of random access memories.      
     """
+    cdef public:
+        cdef str input_class
+        cdef int input_length
+        cdef int tuple_size
+        cdef int ram_size
+        cdef int number_of_rams
+        cdef bint bleaching
+        #cdef dict memory_dict
+        #cdef list memory_list
+        cdef object memory
+        cdef str type_mem_alloc
+        cdef object write
+        cdef object evaluate
+        cdef object generate_mental_image
 
 
-    def __init__(self, input_class, input_length, tuple_size, bleaching = False, type_mem_alloc = "dalloc"):
+
+    def __init__(self, str input_class, int input_length, int tuple_size, bint bleaching = False, str type_mem_alloc = "dalloc"):
         """
         Constructor for the Discriminator class.
 
@@ -21,27 +37,34 @@ class Discriminator:
         default value is "dalloc".
 
         """
+        
         self.input_class = input_class
         self.input_length = input_length
         self.tuple_size = tuple_size
         self.ram_size = int(math.pow(2, self.tuple_size))
         self.number_of_rams = int(self.input_length / self.tuple_size)
         self.bleaching = bleaching
+        #self.memory_dict = None
+        #self.memory_list = None
         self.memory = None
         self.type_mem_alloc = type_mem_alloc
 
         if type_mem_alloc == "dalloc":
             self.memory = {}
+            #self.memory_dict = {}
             self.write = self.write_dinamyc_alloc
             self.evaluate = self.evaluate_dinamyc_alloc
             self.generate_mental_image = self.generate_mental_image_dalloc
         elif type_mem_alloc == "palloc":
             self.memory = [0] * int(self.number_of_rams * self.ram_size) #np.zeros((int(self.number_of_rams * self.ram_size)))
+            #self.memory_list = [0] * int(self.number_of_rams * self.ram_size)
+            #self.memory = np.zeros(self.number_of_rams * self.ram_size, dtype=np.int)
             self.write = self.write_pre_alloc_array
             self.evaluate = self.evaluate_pre_alloc_array
             self.generate_mental_image = self.generate_mental_image_palloc
         else:
             raise Exception("\"type_mem_alloc\" only accepts the values \"dalloc\", for dynamic allocation and \"palloc\", for pre-allocation.")
+
 
     def write_dinamyc_alloc(self, addresses):
         """

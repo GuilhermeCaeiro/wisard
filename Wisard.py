@@ -2,7 +2,9 @@
 Module that implements the WiSARD classifier.
 """
 
+import pyximport; pyximport.install()
 from Discriminator import Discriminator
+from Utils import DataPreprocessor
 import random
 import math
 import copy
@@ -41,10 +43,18 @@ class Wisard:
         self.number_of_rams = 0 
         self.discriminators = {}
         self.type_mem_alloc = type_mem_alloc
+        
+        self.data_preprocessor = DataPreprocessor(
+            self.tuple_size, 
+            self.ram_size, 
+            self.shuffle_observations,
+            self.seed
+        )
 
 
+    """
     def random_mapping(self, observation):
-        """
+        "
         Prepares the observation by appling to it the random mapping of the bits in the input sequence, 
         based on the seed provided during the class creation. 
 
@@ -53,7 +63,7 @@ class Wisard:
         Returns: 
             -> A shuffled version of "observation" if "self.shuffle_observations" is 
             True, or the unmodified "observation" otherwise.
-        """
+        "
 
         if self.shuffle_observations:
             observation = copy.deepcopy(observation)
@@ -62,6 +72,7 @@ class Wisard:
             random.shuffle(observation)
 
         return observation
+    """
 
 
     def train_bulk(self, observations_and_classes):
@@ -86,7 +97,11 @@ class Wisard:
         if(len(observations) != len(classes)):
             raise Exception("Lengths of \"observations\" and \"classes\" must be equal.")
 
-        transformed_observations = self.prepare_observations(observations, "train")
+        transformed_observations = self.data_preprocessor.prepare_observations(observations, "train")
+
+        if self.observation_length == 0:
+            self.observation_length = self.data_preprocessor.observation_length
+            self.number_of_rams = self.data_preprocessor.number_of_rams
         
         for i in range(len(transformed_observations)):
             observation = transformed_observations[i]
@@ -112,8 +127,10 @@ class Wisard:
         """
         
         predictions = []
-        transformed_observations = self.prepare_observations(observations, "predict")
-        
+        start_time = time.time()
+        transformed_observations = self.data_preprocessor.prepare_observations(observations, "predict")
+        print("Time taken to prepare observations:", time.time() - start_time)
+
         for observation in transformed_observations:                
             result_achieved = False
             predicted_classes = []
@@ -236,7 +253,7 @@ class Wisard:
             
         return predictions
 
-    
+    """
     def prepare_observations(self, observations, caller):
         transformed_observations = []
 
@@ -265,8 +282,9 @@ class Wisard:
             transformed_observations.append(observation)
 
         return transformed_observations
+    """
 
-
+    """
     # eats a lot of memory
     def get_observation_as_bin_strings(self, observation):
         observation_as_bin_strings = []
@@ -295,6 +313,7 @@ class Wisard:
         address = pattern[start: end]
         address = int("".join(str(i) for i in address), 2) 
         return address
+    """
 
 
     def simplify_predictions(self, predictions):
