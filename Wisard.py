@@ -3,8 +3,8 @@ Module that implements the WiSARD classifier.
 """
 
 import pyximport; pyximport.install()
-from Discriminator import Discriminator
-from Utils import DataPreprocessor
+from Discriminator import DiscriminatorWisard, DiscriminatorRegressionWisard 
+from Utils import DataPreprocessor, Mean
 import random
 import math
 import copy
@@ -109,7 +109,7 @@ class Wisard:
             discriminator = None
 
             if observation_class not in self.discriminators:
-                discriminator = Discriminator(observation_class, self.observation_length, 
+                discriminator = DiscriminatorWisard(observation_class, self.observation_length, 
                                     self.tuple_size, self.bleaching, self.type_mem_alloc)   
                 self.discriminators[observation_class] = discriminator
             else:
@@ -252,68 +252,6 @@ class Wisard:
                 predictions = predictions + processes_predictions[i]  
             
         return predictions
-
-    """
-    def prepare_observations(self, observations, caller):
-        transformed_observations = []
-
-        for observation in observations:
-
-            if caller == "train" and self.observation_length == 0:
-                observation_length = len(observation)
-                
-                if ((observation_length % self.tuple_size) != 0):
-                    raise Exception("Observation length MUST be multiple of tuple size.")
-
-                self.observation_length = observation_length
-                self.number_of_rams = int(self.observation_length / self.tuple_size)
-            
-            if len(observation) != self.observation_length:
-                raise Exception("Observation length MUST be %s." % (str(self.observation_length)))
-
-            observation = self.random_mapping(observation)
-
-            if self.type_mem_alloc == "dalloc":
-                #observation = self.get_observation_as_bin_strings(observation)
-                observation = self.get_observation_as_ints(observation) # string consumes way, waaay too much memory here.
-            elif self.type_mem_alloc == "palloc":
-                observation = self.get_observation_as_ints(observation)
-
-            transformed_observations.append(observation)
-
-        return transformed_observations
-    """
-
-    """
-    # eats a lot of memory
-    def get_observation_as_bin_strings(self, observation):
-        observation_as_bin_strings = []
-
-        for i in range(self.number_of_rams):
-            address = observation[i * self.tuple_size: (i * self.tuple_size) + self.tuple_size]
-            address = "".join(str(k) for k in address) 
-            observation_as_bin_strings.append(address)
-
-        return observation_as_bin_strings
-
-    def get_observation_as_ints(self, observation):
-        observation_as_ints = []
-
-        for i in range(self.number_of_rams): 
-            observation_as_ints.append(
-                self.get_address_as_int(
-                    observation, 
-                    i * self.tuple_size, (i * self.tuple_size) + self.tuple_size
-                )
-            )
-
-        return observation_as_ints
-
-    def get_address_as_int(self, pattern, start, end):
-        address = pattern[start: end]
-        address = int("".join(str(i) for i in address), 2) 
-        return address
-    """
 
 
     def simplify_predictions(self, predictions):

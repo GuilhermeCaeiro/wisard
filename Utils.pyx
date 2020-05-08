@@ -1,6 +1,7 @@
 import random
 import math
 import copy
+import numpy as np
 
 cdef class DataPreprocessor:
 
@@ -104,3 +105,42 @@ cdef class DataPreprocessor:
         address = pattern[start: end]
         int_address = int("".join(str(i) for i in address), 2) 
         return int_address
+
+
+
+class Mean:
+
+    @classmethod
+    def mean(self, counters, partial_ys):
+        return sum(partial_ys) / sum(counters)
+
+
+    @classmethod
+    def median(self, counters, partial_ys):
+        return np.median(np.array(partial_ys) / np.array(counters))
+
+
+    @classmethod
+    def harmonic(self, counters, partial_ys):
+        return np.power((np.sum(np.power(partial_ys), -1.0) / float(len(partial_ys))), -1.0)
+
+
+    @classmethod
+    def power(self, counters, partial_ys):
+        return np.power((np.sum(np.power(np.array(partial_ys), np.array(counters, dtype="float32"))) / float(len(partial_ys))), np.sum(counters))
+
+
+    @classmethod
+    def harmonic_power(self, counters, partial_ys):
+        return float(len(partial_ys)) / np.sum(np.array(counters) / np.array(partial_ys))
+
+
+    @classmethod
+    def geometric(self, counters, partial_ys):
+        return np.power(np.prod(np.array(partial_ys) / np.array(counters)), 1.0 / len(partial_ys))
+
+
+    @classmethod
+    def exponential(self, counters, partial_ys):
+        return np.log(np.sum(np.exp(np.array(partial_ys) / np.array(counters))) / float(len(partial_ys)))
+
