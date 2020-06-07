@@ -242,6 +242,7 @@ class DiscriminatorRegressionWisard:
         for i in range(self.number_of_rams):
             if i not in self.memory:
                 self.memory[i] = {}
+                self.memory_y[i] = {}
 
             address = addresses[i]
 

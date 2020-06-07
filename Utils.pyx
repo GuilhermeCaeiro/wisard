@@ -6,7 +6,7 @@ import numpy as np
 cdef class DataPreprocessor:
 
     cdef public:
-        cdef int seed, tuple_size, observation_length, ram_size, number_of_rams
+        cdef int seed, tuple_size, observation_length, ram_size, number_of_rams, additional_zeros
         cdef bint shuffle_observations
 
     def __init__(self, int tuple_size, int ram_size, bint shuffle_observations, int seed):
@@ -16,6 +16,7 @@ cdef class DataPreprocessor:
         self.ram_size = ram_size
         self.shuffle_observations = shuffle_observations
         self.number_of_rams = 0 
+        self.additional_zeros = 0
 
 
     def random_mapping(self, list observation):
@@ -46,19 +47,24 @@ cdef class DataPreprocessor:
         transformed_observations = []
 
         for observation in observations:
-            observation_length = len(observation)
 
             if caller == "train" and self.observation_length == 0:
-                if ((observation_length % self.tuple_size) != 0):
-                    raise Exception("Observation length MUST be multiple of tuple size.")
+                #if ((observation_length % self.tuple_size) != 0):
+                #    raise Exception("Observation length MUST be multiple of tuple size.")
+                observation_length = len(observation)
 
-                self.observation_length = observation_length
+                if ((observation_length % self.tuple_size) != 0):
+                    self.additional_zeros = ((observation_length // self.tuple_size) + 1) * self.tuple_size - observation_length
+                    print("Adding %s zeros." % (str(self.additional_zeros)))
+
+                self.observation_length = observation_length + self.additional_zeros
                 self.number_of_rams = self.observation_length / self.tuple_size
             
+            observation = self.random_mapping(observation + [0 for i in range(self.additional_zeros)])
+            observation_length = len(observation)
+
             if observation_length != self.observation_length:
                 raise Exception("Observation length MUST be %s." % (str(self.observation_length)))
-
-            observation = self.random_mapping(observation)
 
             #if self.type_mem_alloc == "dalloc":
             #    #observation = self.get_observation_as_bin_strings(observation)

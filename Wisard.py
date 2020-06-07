@@ -129,7 +129,7 @@ class Wisard:
         predictions = []
         start_time = time.time()
         transformed_observations = self.data_preprocessor.prepare_observations(observations, "predict")
-        print("Time taken to prepare observations:", time.time() - start_time)
+        #print("Time taken to prepare observations:", time.time() - start_time)
 
         for observation in transformed_observations:                
             result_achieved = False
@@ -210,6 +210,10 @@ class Wisard:
         """
 
         predictions = []
+        num_observations = len(observations)
+
+        if num_observations == 0:
+            raise Exception("\"observations\" must have length > 0.")
 
         if not multi_proc:
             predictions = self.predict_single_proc(observations, detailed)
@@ -217,7 +221,9 @@ class Wisard:
             if num_proc <= 0:
                 raise Exception("\"num_proc\" must be an integer >= 1.")
 
-            num_observations = len(observations)
+            if num_observations < num_proc:
+                num_proc = num_observations
+            
             observations_per_chunk = math.ceil(num_observations / num_proc)
             processes = {}
             processes_predictions = multiprocessing.Manager().dict()
@@ -347,3 +353,74 @@ class Wisard:
 
         return loaded_object
         
+
+
+class RegressionWisard(Wisard):
+
+    def __init__(self, tuple_size = 2, mean_type = "mean", seed = 0, shuffle_observations = True, type_mem_alloc = "dalloc"):
+        super().__init__(tuple_size, True, seed, shuffle_observations, type_mem_alloc)
+
+        self.mean_type = mean_type
+
+    def predict_single_proc(self, observations, detailed = False):
+        predictions = []
+        start_time = time.time()
+        transformed_observations = self.data_preprocessor.prepare_observations(observations, "predict")
+        #print("Time taken to prepare observations:", time.time() - start_time)
+
+        discriminator = self.discriminators["single"]
+
+        for observation in transformed_observations: 
+            counters, partial_ys = discriminator.evaluate(observation)   
+            prediction = self.calculate_mean(counters, partial_ys)
+            predictions.append(prediction)
+
+        #if not detailed:
+        #    self.simplify_predictions(predictions)
+            
+        return predictions
+
+    def train(self, observations, targets):
+
+        if(len(observations) != len(targets)):
+            raise Exception("Lengths of \"observations\" and \"targets\" must be equal.")
+
+        transformed_observations = self.data_preprocessor.prepare_observations(observations, "train")
+        discriminator = None
+
+        if self.observation_length == 0:
+            self.observation_length = self.data_preprocessor.observation_length
+            self.number_of_rams = self.data_preprocessor.number_of_rams
+
+        if "single" not in self.discriminators:
+            discriminator = DiscriminatorRegressionWisard("single", self.observation_length, 
+                                self.tuple_size, self.bleaching, self.type_mem_alloc) 
+            self.discriminators["single"] = discriminator
+        else: 
+            discriminator = self.discriminators["single"]
+
+        for observation, target in zip(transformed_observations, targets):
+            discriminator.write(observation, target)
+
+
+    def calculate_mean(self, counters, partial_ys):
+        mean = 0
+
+        if self.mean_type == "mean":
+            mean = Mean.mean(counters, partial_ys)
+        elif self.mean_type == "median":
+            mean = Mean.median(counters, partial_ys)
+        elif self.mean_type == "harmonic":
+            mean = Mean.harmonic(counters, partial_ys)
+        elif self.mean_type == "power":
+            mean = Mean.power(counters, partial_ys)
+        elif self.mean_type == "harmonic_power":
+            mean = Mean.harmonic_power(counters, partial_ys)
+        elif self.mean_type == "geometric":
+            mean = Mean.geometric(counters, partial_ys)
+        elif self.mean_type == "exponential":
+            mean = Mean.exponential(counters, partial_ys)
+        else:
+            raise Exception("Unsupported mean type: \"%s\"." % (self.mean_type))
+
+        return mean
