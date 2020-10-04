@@ -13,6 +13,8 @@ To run WiSARD and the provided tests, the following libraries are required:
  - sklearn
  - pandas
 
+ And a [**C compiler** compatible with Cython (gcc, MinGW, etc)](https://cython.readthedocs.io/en/latest/src/quickstart/install.html). 
+
 ## References
 [1] I. Aleksander,  W. Thomas, P. Bowden, WISARD: a radical new step forward in image recognition, Sensor Review 4(3) (1984) 120-124.
 

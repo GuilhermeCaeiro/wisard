@@ -6,6 +6,8 @@ from Wisard import RegressionWisard
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn import datasets, linear_model
+from sklearn.preprocessing import MinMaxScaler
+import bitstring
 
 
 def thermometer_encoding(value, thermometer_size, min_value, max_value):
@@ -19,6 +21,10 @@ def thermometer_encoding(value, thermometer_size, min_value, max_value):
     thermometer = [1 if bit < ones else 0 for bit in range(thermometer_size)] #"1" * ones + 0 * zeros
 
     return thermometer
+
+def float_binary_encoding(value, length=32):
+    binary_representation = bitstring.BitArray(float=value, length=length).bin
+    return [int(bit) for bit in binary_representation]
 
 
 ## Simple regression task, using the dateset from
@@ -311,17 +317,107 @@ def test_3():
 
 
 
+def test_4():
+    dataset = pd.read_csv("sample_data/simplelinearregression.csv", sep=",")
+    dataset = dataset.sample(frac=1).reset_index(drop=True)
+    training_set, test_set = train_test_split(dataset, test_size=0.3)
+
+    tuple_sizes = [size for size in range(2,21)]
+    thermometer_sizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    
+    # Test 1.1
+    ## References
+    regressor = linear_model.LinearRegression()
+    regressor.fit(dataset["X"].to_numpy().reshape(-1, 1), dataset["Y"].to_numpy().reshape(-1, 1))
+    predictions = regressor.predict(dataset["X"].to_numpy().reshape(-1, 1))
+    print("LR MAE:", mean_absolute_error(predictions, dataset["Y"]), "LR RMSE:", np.sqrt(mean_squared_error(predictions, dataset["Y"])))
+
+    scaler = MinMaxScaler()
+    scaler.fit(dataset["X"].to_numpy().reshape(-1, 1))
+    
+    start_time = time.time()
+    for tuple_size in tuple_sizes:
+        for thermometer_size in thermometer_sizes:
+            encoded_observations = []
+            
+            for index, row in dataset.iterrows():
+                #print(float_binary_encoding(10))
+                #print(type(float_binary_encoding(10)))
+                #return 
+                encoded_observations.append(float_binary_encoding(scaler.transform([[row["X"]]]), 32))
+
+            #print(encoded_observations)
+            wisard = RegressionWisard(tuple_size = tuple_size, mean_type = "mean", seed = 3356, shuffle_observations = True, type_mem_alloc = "dalloc")
+            wisard.train(encoded_observations, dataset["Y"].tolist())
+            
+            predictions = wisard.predict(encoded_observations)
+            
+            error_mae = mean_absolute_error(predictions, dataset["Y"])
+            error_rmse = np.sqrt(mean_squared_error(predictions, dataset["Y"]))
+
+            print("Tuple size:", tuple_size, "Thermometer size:", thermometer_size, "In-sample (mae):", error_mae, "In-sample (rmse):", error_rmse)
+
+            #break
+
+    print("Time taken:", time.time() - start_time, "s.")
+
+    return
+    
+    # Test 1.2
+    ## References
+    regressor = linear_model.LinearRegression()
+    regressor.fit(training_set["X"].to_numpy().reshape(-1, 1), training_set["Y"].to_numpy().reshape(-1, 1))
+    predictions = regressor.predict(training_set["X"].to_numpy().reshape(-1, 1))
+    print("LR Ein MAE:", mean_absolute_error(predictions, training_set["Y"]), "LR Ein RMSE:", np.sqrt(mean_squared_error(predictions, training_set["Y"])))
+    predictions = regressor.predict(test_set["X"].to_numpy().reshape(-1, 1))
+    print("LR Eout MAE:", mean_absolute_error(predictions, test_set["Y"]), "LR Eout RMSE:", np.sqrt(mean_squared_error(predictions, test_set["Y"])))
+
+    start_time = time.time()
+    for tuple_size in tuple_sizes:
+        for thermometer_size in thermometer_sizes:
+            encoded_observations = []
+            
+            for index, row in training_set.iterrows():
+                encoded_observations.append(thermometer_encoding(row["X"], thermometer_size, training_set["X"].min(), training_set["X"].max()))
+
+            #print(encoded_observations)
+            wisard = RegressionWisard(tuple_size = tuple_size, mean_type = "mean", seed = 3356, shuffle_observations = True, type_mem_alloc = "dalloc")
+            wisard.train(encoded_observations, training_set["Y"].tolist())
+            
+            predictions = wisard.predict(encoded_observations)
+            
+            error_mae = mean_absolute_error(predictions, training_set["Y"])
+            error_rmse = np.sqrt(mean_squared_error(predictions, training_set["Y"]))
+
+            print("Tuple size:", tuple_size, "Thermometer size:", thermometer_size, "In-sample (mae):", error_mae, "In-sample (rmse):", error_rmse)
+
+            encoded_observations = []
+
+            for index, row in test_set.iterrows():
+                encoded_observations.append(thermometer_encoding(row["X"], thermometer_size, training_set["X"].min(), training_set["X"].max()))
+
+            predictions = wisard.predict(encoded_observations)
+            
+            error_mae = mean_absolute_error(predictions, test_set["Y"])
+            error_rmse = np.sqrt(mean_squared_error(predictions, test_set["Y"]))
+
+            print("Tuple size:", tuple_size, "Thermometer size:", thermometer_size, "Out of sample (mae):", error_mae, "Out of sample (rmse):", error_rmse)
+
+    print("Time taken:", time.time() - start_time, "s.")
 
 
-test_1()
+
+#test_1()
 
 print("\n\n\n\n\n\n\n\n\n")
 
-test_2()
+#test_2()
 
 print("\n\n\n\n\n\n\n\n\n")
 
-test_3()
+#test_3()
+
+test_4()
 
 
 
