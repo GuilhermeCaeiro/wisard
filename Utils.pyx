@@ -128,12 +128,16 @@ class Mean:
 
     @classmethod
     def harmonic(self, counters, partial_ys):
-        return np.power((np.sum(np.power(partial_ys), -1.0) / float(len(partial_ys))), -1.0)
+        return self.power(counters, partial_ys, -1.0)
+        #return np.power((np.sum(np.power(partial_ys), -1.0) / float(len(partial_ys))), -1.0)
 
 
+    # https://undergroundmathematics.org/glossary/power-mean
     @classmethod
-    def power(self, counters, partial_ys):
-        return np.power((np.sum(np.power(np.array(partial_ys), np.array(counters, dtype="float32"))) / float(len(partial_ys))), np.sum(counters))
+    def power(self, counters, partial_ys, power_value):
+        power_value = float(power_value)
+        return np.power((sum(np.power(partial_ys, power_value)) / len(partial_ys)), 1.0 / power_value)
+        #return np.power((np.sum(np.power(np.array(partial_ys), np.array(counters, dtype="float32"))) / float(len(partial_ys))), np.sum(counters))
 
 
     @classmethod

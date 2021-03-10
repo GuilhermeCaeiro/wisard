@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 import bitstring
 
 
-def thermometer_encoding(value, thermometer_size, min_value, max_value):
+"""def thermometer_encoding(value, thermometer_size, min_value, max_value):
     ones = math.ceil(value / ((max_value - min_value) / thermometer_size))
     #zeros = thermometer_size - ones
     if ones > thermometer_size:
@@ -20,7 +20,62 @@ def thermometer_encoding(value, thermometer_size, min_value, max_value):
 
     thermometer = [1 if bit < ones else 0 for bit in range(thermometer_size)] #"1" * ones + 0 * zeros
 
-    return thermometer
+    return thermometer"""
+
+
+def encode_value(value, thermometer_size, min_value, max_value):
+    value = float(value)
+    min_value = float(min_value)
+    max_value = float(max_value)
+    #thermometer_size = training_experiment["binary_feature_size"]
+
+    clamped_value = max(min_value, min(value, max_value))
+
+    ones = int(math.floor(((clamped_value - min_value) / (max_value - min_value)) * thermometer_size))
+    zeros = int(thermometer_size - ones)
+    
+    encoded_value = ([1] * ones) + ([0] * zeros)
+
+    return encoded_value
+
+def encode_value_non_completely_zeros(value, thermometer_size, min_value, max_value):
+    value = float(value)
+    min_value = float(min_value)
+    max_value = float(max_value)
+
+    clamped_value = max(min_value, min(value, max_value))
+
+    ones = int(min(int(math.floor(((clamped_value - min_value) / (max_value - min_value)) * thermometer_size)) + 1, max_value))
+    zeros = int(thermometer_size - ones)
+    
+    encoded_value = ([1] * ones) + ([0] * zeros)
+
+    #print("-", zeros, ones, clamped_value)
+
+    return encoded_value
+
+
+def encode_value_circular_thermometer(value, thermometer_size, min_value, max_value):
+    value = float(value)
+    min_value = float(min_value)
+    max_value = float(max_value)
+    num_ones = int(thermometer_size / 2)
+
+    clamped_value = max(min_value, min(value, max_value))
+
+    ones = int(math.floor(((clamped_value - min_value) / (max_value - min_value)) * thermometer_size))
+    zeros = int(thermometer_size - ones)
+
+    starting_zeros = min(ones, thermometer_size - 1)
+    expected_size = starting_zeros + num_ones
+    remainder_ones = max(0, expected_size - thermometer_size)
+
+    #encoded_value = ([1] * ones) + ([0] * zeros)
+    #print(thermometer_size, expected_size, remainder_ones, starting_zeros)
+    encoded_value = ([1] * remainder_ones) + ([0] * (starting_zeros - remainder_ones))  + ([1] * (num_ones - remainder_ones)) + ([0] * max(0, thermometer_size - expected_size))
+
+    return encoded_value
+
 
 def float_binary_encoding(value, length=32):
     binary_representation = bitstring.BitArray(float=value, length=length).bin
@@ -53,7 +108,7 @@ def test_1():
                 encoded_observations.append(thermometer_encoding(row["X"], thermometer_size, dataset["X"].min(), dataset["X"].max()))
 
             #print(encoded_observations)
-            wisard = RegressionWisard(tuple_size = tuple_size, mean_type = "mean", seed = 3356, shuffle_observations = True, type_mem_alloc = "dalloc")
+            wisard = RegressionWisard(tuple_size = tuple_size, mean_type = "power_2", seed = 3356, shuffle_observations = True, type_mem_alloc = "dalloc")
             wisard.train(encoded_observations, dataset["Y"].tolist())
             
             predictions = wisard.predict(encoded_observations)
@@ -116,8 +171,8 @@ def test_1():
 ## https://www.kaggle.com/karthickveerakumar/salary-data-simple-linear-regression
 def test_2():
     dataset = pd.read_csv("sample_data/Salary_Data.csv", sep=",")
-    dataset = dataset.sample(frac=1).reset_index(drop=True)
-    training_set, test_set = train_test_split(dataset, test_size=0.3)
+    dataset = dataset.sample(frac=1, random_state=3356).reset_index(drop=True)
+    training_set, test_set = train_test_split(dataset, test_size=0.3, random_state=3356)
 
     tuple_sizes = [size for size in range(2,21)]
     thermometer_sizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -406,8 +461,9 @@ def test_4():
     print("Time taken:", time.time() - start_time, "s.")
 
 
+thermometer_encoding = encode_value
 
-#test_1()
+test_1()
 
 print("\n\n\n\n\n\n\n\n\n")
 
@@ -417,7 +473,7 @@ print("\n\n\n\n\n\n\n\n\n")
 
 #test_3()
 
-test_4()
+#test_4()
 
 
 

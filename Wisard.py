@@ -360,7 +360,13 @@ class RegressionWisard(Wisard):
     def __init__(self, tuple_size = 2, mean_type = "mean", seed = 0, shuffle_observations = True, type_mem_alloc = "dalloc"):
         super().__init__(tuple_size, True, seed, shuffle_observations, type_mem_alloc)
 
-        self.mean_type = mean_type
+        #self.mean_type = mean_type
+        self.set_mean(mean_type)
+
+    def set_mean(self, mean_type_string):
+        mean_info = mean_type_string.split("_")
+        self.mean_type = mean_info[0]
+        self.mean_arg = mean_info[-1]
 
     def predict_single_proc(self, observations, detailed = False):
         predictions = []
@@ -374,7 +380,10 @@ class RegressionWisard(Wisard):
             counters, partial_ys = discriminator.evaluate(observation)
 
             try:
-                prediction = self.calculate_mean(counters, partial_ys)
+                print(counters, partial_ys, self.mean_arg)
+                prediction = self.calculate_mean(counters, partial_ys, self.mean_arg)
+                print(prediction)
+                return
             except ZeroDivisionError:
                 print("Division by zero. Returning prediction value as 0.0.")
                 prediction = 0.0
@@ -408,7 +417,7 @@ class RegressionWisard(Wisard):
             discriminator.write(observation, target)
 
 
-    def calculate_mean(self, counters, partial_ys):
+    def calculate_mean(self, counters, partial_ys, mean_arg = None):
         mean = 0
 
         if self.mean_type == "mean":
@@ -418,7 +427,7 @@ class RegressionWisard(Wisard):
         elif self.mean_type == "harmonic":
             mean = Mean.harmonic(counters, partial_ys)
         elif self.mean_type == "power":
-            mean = Mean.power(counters, partial_ys)
+            mean = Mean.power(counters, partial_ys, mean_arg)
         elif self.mean_type == "harmonic_power":
             mean = Mean.harmonic_power(counters, partial_ys)
         elif self.mean_type == "geometric":
