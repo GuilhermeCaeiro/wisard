@@ -88,13 +88,14 @@ def test_1():
     dataset = pd.read_csv("sample_data/simplelinearregression.csv", sep=",")
     dataset = dataset.sample(frac=1).reset_index(drop=True)
     training_set, test_set = train_test_split(dataset, test_size=0.3)
+    print(len(training_set), len(test_set))
 
-    tuple_sizes = [size for size in range(2,21)]
-    thermometer_sizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    tuple_sizes = [size for size in range(2,21)] +[50, 75, 100]
+    thermometer_sizes = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]#[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     
     # Test 1.1
     ## References
-    regressor = linear_model.LinearRegression()
+    """regressor = linear_model.LinearRegression()
     regressor.fit(dataset["X"].to_numpy().reshape(-1, 1), dataset["Y"].to_numpy().reshape(-1, 1))
     predictions = regressor.predict(dataset["X"].to_numpy().reshape(-1, 1))
     print("LR MAE:", mean_absolute_error(predictions, dataset["Y"]), "LR RMSE:", np.sqrt(mean_squared_error(predictions, dataset["Y"])))
@@ -108,10 +109,12 @@ def test_1():
                 encoded_observations.append(thermometer_encoding(row["X"], thermometer_size, dataset["X"].min(), dataset["X"].max()))
 
             #print(encoded_observations)
-            wisard = RegressionWisard(tuple_size = tuple_size, mean_type = "power_2", seed = 3356, shuffle_observations = True, type_mem_alloc = "dalloc")
+            wisard = RegressionWisard(tuple_size = tuple_size, mean_type = "power_7", seed = 3356, shuffle_observations = True, type_mem_alloc = "dalloc")
             wisard.train(encoded_observations, dataset["Y"].tolist())
             
             predictions = wisard.predict(encoded_observations)
+            #print(type(predictions))
+            #print(len(predictions), list(predictions), len(dataset["Y"]), list(dataset["Y"]))
             
             error_mae = mean_absolute_error(predictions, dataset["Y"])
             error_rmse = np.sqrt(mean_squared_error(predictions, dataset["Y"]))
@@ -119,8 +122,9 @@ def test_1():
             print("Tuple size:", tuple_size, "Thermometer size:", thermometer_size, "In-sample (mae):", error_mae, "In-sample (rmse):", error_rmse)
 
             #break
+        #break
 
-    print("Time taken:", time.time() - start_time, "s.")
+    print("Time taken:", time.time() - start_time, "s.")"""
 
     #return
     

@@ -6,14 +6,14 @@ import numpy as np
 cdef class DataPreprocessor:
 
     cdef public:
-        cdef int seed, tuple_size, observation_length, ram_size, number_of_rams, additional_zeros
+        cdef int seed, tuple_size, observation_length, number_of_rams, additional_zeros
         cdef bint shuffle_observations
 
-    def __init__(self, int tuple_size, int ram_size, bint shuffle_observations, int seed):
+    def __init__(self, int tuple_size, double ram_size, bint shuffle_observations, int seed):
         self.seed = seed
         self.tuple_size = tuple_size
         self.observation_length = 0
-        self.ram_size = ram_size
+        #self.ram_size = ram_size # unused, and received as double to avoid problems with the size of the number received
         self.shuffle_observations = shuffle_observations
         self.number_of_rams = 0 
         self.additional_zeros = 0
@@ -118,6 +118,9 @@ class Mean:
 
     @classmethod
     def mean(self, counters, partial_ys):
+        #print(counters, partial_ys)
+        #exit(1)
+        #print(len(counters), len(partial_ys), sum(partial_ys))
         return sum(partial_ys) / sum(counters)
 
 
@@ -135,10 +138,11 @@ class Mean:
     # https://undergroundmathematics.org/glossary/power-mean
     @classmethod
     def power(self, counters, partial_ys, power_value):
+        partial_ys = np.asarray(partial_ys)
+        counters = np.asarray(counters)
         power_value = float(power_value)
-        return np.power((sum(np.power(partial_ys, power_value)) / len(partial_ys)), 1.0 / power_value)
+        return np.power((sum(np.power(partial_ys / counters, power_value)) / len(partial_ys)), 1.0 / power_value)
         #return np.power((np.sum(np.power(np.array(partial_ys), np.array(counters, dtype="float32"))) / float(len(partial_ys))), np.sum(counters))
-
 
     @classmethod
     def harmonic_power(self, counters, partial_ys):

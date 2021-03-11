@@ -378,19 +378,20 @@ class RegressionWisard(Wisard):
 
         for observation in transformed_observations: 
             counters, partial_ys = discriminator.evaluate(observation)
+            prediction = None
 
             try:
-                print(counters, partial_ys, self.mean_arg)
                 prediction = self.calculate_mean(counters, partial_ys, self.mean_arg)
-                print(prediction)
-                return
             except ZeroDivisionError:
-                print("Division by zero. Returning prediction value as 0.0.")
-                prediction = 0.0
+                #print("Division by zero. Returning prediction value as 0.0.")
+                #prediction = 0.0
+                raise ZeroDivisionError("Division by zero.")
             predictions.append(prediction)
 
         #if not detailed:
         #    self.simplify_predictions(predictions)
+
+        #print(predictions)
             
         return predictions
 
