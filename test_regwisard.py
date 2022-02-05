@@ -87,10 +87,10 @@ def float_binary_encoding(value, length=32):
 def test_1():
     dataset = pd.read_csv("sample_data/simplelinearregression.csv", sep=",")
     dataset = dataset.sample(frac=1).reset_index(drop=True)
-    training_set, test_set = train_test_split(dataset, test_size=0.3)
+    training_set, test_set = train_test_split(dataset, test_size=0.3, random_state=3356)
     print(len(training_set), len(test_set))
 
-    tuple_sizes = [size for size in range(2,21)] +[50, 75, 100]
+    tuple_sizes = [size for size in range(2,21)]# +[50, 75, 100]
     thermometer_sizes = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]#[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     
     # Test 1.1
