@@ -2,6 +2,7 @@ import random
 import math
 import copy
 import numpy as np
+import bitstring
 
 cdef class DataPreprocessor:
 
@@ -158,3 +159,70 @@ class Mean:
     def exponential(self, counters, partial_ys):
         return np.log(np.sum(np.exp(np.array(partial_ys) / np.array(counters))) / float(len(partial_ys)))
 
+
+
+class Binarizer:
+
+    @classmethod
+    def thermometer(value, thermometer_size, min_value, max_value):
+        return thermometer_v1(value, thermometer_size, min_value, max_value)
+
+    @classmethod
+    def thermometer_v1(value, thermometer_size, min_value, max_value):
+        value = float(value)
+        min_value = float(min_value)
+        max_value = float(max_value)
+        #thermometer_size = training_experiment["binary_feature_size"]
+
+        clamped_value = max(min_value, min(value, max_value))
+
+        ones = int(math.floor(((clamped_value - min_value) / (max_value - min_value)) * thermometer_size))
+        zeros = int(thermometer_size - ones)
+        
+        encoded_value = ([1] * ones) + ([0] * zeros)
+
+        return encoded_value
+
+    @classmethod
+    def thermometer_v2(value, thermometer_size, min_value, max_value):
+        value = float(value)
+        min_value = float(min_value)
+        max_value = float(max_value)
+
+        clamped_value = max(min_value, min(value, max_value))
+
+        ones = int(min(int(math.floor(((clamped_value - min_value) / (max_value - min_value)) * thermometer_size)) + 1, max_value))
+        zeros = int(thermometer_size - ones)
+        
+        encoded_value = ([1] * ones) + ([0] * zeros)
+
+        #print("-", zeros, ones, clamped_value)
+
+        return encoded_value
+
+    @classmethod
+    def circular_thermometer(value, thermometer_size, min_value, max_value):
+        value = float(value)
+        min_value = float(min_value)
+        max_value = float(max_value)
+        num_ones = int(thermometer_size / 2)
+
+        clamped_value = max(min_value, min(value, max_value))
+
+        ones = int(math.floor(((clamped_value - min_value) / (max_value - min_value)) * thermometer_size))
+        zeros = int(thermometer_size - ones)
+
+        starting_zeros = min(ones, thermometer_size - 1)
+        expected_size = starting_zeros + num_ones
+        remainder_ones = max(0, expected_size - thermometer_size)
+
+        #encoded_value = ([1] * ones) + ([0] * zeros)
+        #print(thermometer_size, expected_size, remainder_ones, starting_zeros)
+        encoded_value = ([1] * remainder_ones) + ([0] * (starting_zeros - remainder_ones))  + ([1] * (num_ones - remainder_ones)) + ([0] * max(0, thermometer_size - expected_size))
+
+        return encoded_value
+
+    @classmethod
+    def float_binary(value, length=32):
+        binary_representation = bitstring.BitArray(float=value, length=length).bin
+        return [int(bit) for bit in binary_representation]

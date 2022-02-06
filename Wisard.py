@@ -360,6 +360,8 @@ class RegressionWisard(Wisard):
     def __init__(self, tuple_size = 2, mean_type = "mean", seed = 0, shuffle_observations = True, type_mem_alloc = "dalloc"):
         super().__init__(tuple_size, True, seed, shuffle_observations, type_mem_alloc)
 
+        self.output_size = None
+
         #self.mean_type = mean_type
         self.set_mean(mean_type)
 
@@ -374,18 +376,19 @@ class RegressionWisard(Wisard):
         transformed_observations = self.data_preprocessor.prepare_observations(observations, "predict")
         #print("Time taken to prepare observations:", time.time() - start_time)
 
-        discriminator = self.discriminators["single"]
+        #discriminator = self.discriminators["single"]
 
-        for observation in transformed_observations: 
-            counters, partial_ys = discriminator.evaluate(observation)
-            prediction = None
+        for observation in transformed_observations:
+            prediction = []
+            for output_node in range(self.output_size):
+                counters, partial_ys = self.discriminators[output_node].evaluate(observation)
 
-            try:
-                prediction = self.calculate_mean(counters, partial_ys, self.mean_arg)
-            except ZeroDivisionError:
-                #print("Division by zero. Returning prediction value as 0.0.")
-                #prediction = 0.0
-                raise ZeroDivisionError("Division by zero.")
+                try:
+                    prediction.append(self.calculate_mean(counters, partial_ys, self.mean_arg))
+                except ZeroDivisionError:
+                    #print("Division by zero. Returning prediction value as 0.0.")
+                    #prediction = 0.0
+                    raise ZeroDivisionError("Division by zero.")
             predictions.append(prediction)
 
         #if not detailed:
@@ -407,16 +410,31 @@ class RegressionWisard(Wisard):
             self.observation_length = self.data_preprocessor.observation_length
             self.number_of_rams = self.data_preprocessor.number_of_rams
 
-        if "single" not in self.discriminators:
-            discriminator = DiscriminatorRegressionWisard("single", self.observation_length, 
-                                self.tuple_size, self.bleaching, self.type_mem_alloc) 
-            self.discriminators["single"] = discriminator
-        else: 
-            discriminator = self.discriminators["single"]
+        #if "single" not in self.discriminators:
+        #    discriminator = DiscriminatorRegressionWisard("single", self.observation_length, 
+        #                        self.tuple_size, self.bleaching, self.type_mem_alloc) 
+        #    self.discriminators["single"] = discriminator
+        #else: 
+        #    discriminator = self.discriminators["single"]
+
+        if self.output_size is None:
+            #print(type(targets), type(targets[0]))
+            if (type(targets[0]) is float) or (type(targets[0]) is int):
+                self.output_size = 1
+            elif type(targets[0]) is list:
+                self.output_size = len(targets[0]) 
+
+            #print(self.output_size)
+
+            for output_node in range(self.output_size):
+                discriminator = DiscriminatorRegressionWisard(output_node, self.observation_length, 
+                                    self.tuple_size, self.bleaching, self.type_mem_alloc) 
+                self.discriminators[output_node] = discriminator
+
 
         for observation, target in zip(transformed_observations, targets):
-            discriminator.write(observation, target)
-
+            for output_node in range(self.output_size): 
+                self.discriminators[output_node].write(observation, target[output_node] if type(target) is list else target)
 
     def calculate_mean(self, counters, partial_ys, mean_arg = None):
         mean = 0
